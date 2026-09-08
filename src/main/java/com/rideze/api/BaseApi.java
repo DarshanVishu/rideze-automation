@@ -7,7 +7,7 @@ import io.restassured.specification.RequestSpecification;
 
 public class BaseApi {
 
-    protected static RequestSpecification getBaseRequestSpec() {
+    public static RequestSpecification getBaseRequestSpec() {
         return new RequestSpecBuilder()
                 .setBaseUri(ConfigReader.get("baseUrl") + "/api/v1")
                 .setContentType(ContentType.JSON)
@@ -15,7 +15,7 @@ public class BaseApi {
                 .build();
     }
 
-    protected static RequestSpecification getAuthenticatedRequestSpec(String token) {
+    public static RequestSpecification getAuthenticatedRequestSpec(String token) {
         return new RequestSpecBuilder()
                 .addRequestSpecification(getBaseRequestSpec())
                 .addHeader("Authorization", "Bearer " + token)

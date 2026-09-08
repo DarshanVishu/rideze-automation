@@ -41,5 +41,15 @@
             <class name="com.rideze.api.TollApiTests" />
         </classes>
     </test>
+    
+    <!-- Add the Security test block at the end -->
+    <test name="Security Regression Tests">
+        <classes>
+            <class name="com.rideze.tests.security.BookingIdorSecurityTest"/>
+            <class name="com.rideze.tests.security.PaymentSecurityTest"/>
+        </classes>
+    </test>
+
+</suite>
 
 </suite>
