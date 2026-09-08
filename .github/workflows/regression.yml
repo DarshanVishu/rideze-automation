@@ -1,11 +1,17 @@
 ﻿name: Rideze Automation Regression Suite
 
 on:
-  push:
-    branches: [ test, main, qa-automation-suite ]
-  pull_request:
-    branches: [ test, main ]
   workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Environment to run against'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+          - staging
+          - dev
 
 jobs:
   test:
@@ -23,9 +29,9 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      - name: Run TestNG Regression Suite
+      - name: Run TestNG Suite
         run: |
-          mvn clean test -Dheadless=true
+          mvn clean test -Denv=${{ github.event.inputs.target_env }} -Dheadless=true
 
       - name: Archive Surefire Reports
         if: always()
