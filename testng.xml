@@ -42,14 +42,12 @@
         </classes>
     </test>
     
-    <!-- Add the Security test block at the end -->
+    <!-- Security Tests -->
     <test name="Security Regression Tests">
         <classes>
             <class name="com.rideze.tests.security.BookingIdorSecurityTest"/>
             <class name="com.rideze.tests.security.PaymentSecurityTest"/>
         </classes>
     </test>
-
-</suite>
 
 </suite>
