@@ -1,0 +1,20 @@
+# Compiled binaries & build artifacts
+target/
+*.class
+
+# Test run outputs & reports
+test-output/
+reports/
+screenshots/
+*.log
+
+# Eclipse / IDE metadata
+.settings/
+.project
+.classpath
+.idea/
+*.iml
+
+# OS files
+Thumbs.db
+.DS_Store

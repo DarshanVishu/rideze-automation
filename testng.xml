@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Rideze Full Regression Suite" verbose="1" parallel="classes" thread-count="2">
+
+    <listeners>
+        <listener class-name="com.rideze.utils.TestListener" />
+    </listeners>
+
+    <!-- UI: Authentication Tests -->
+    <test name="UI - Authentication Tests">
+        <classes>
+            <class name="com.rideze.tests.LoginTest" />
+        </classes>
+    </test>
+
+    <!-- UI: Fleet Management Tests -->
+    <test name="UI - Fleet Management Tests">
+        <classes>
+            <class name="com.rideze.tests.fleet.VehiclesTest" />
+            <class name="com.rideze.tests.fleet.VehiclesNegativeTest" />
+        </classes>
+    </test>
+
+    <!-- UI: Customer & Driver Reviews Tests -->
+    <test name="UI - Customer and Driver Reviews">
+        <classes>
+            <class name="com.rideze.tests.ReviewsTest" />
+        </classes>
+    </test>
+
+    <!-- UI: Customer Booking Operations -->
+    <test name="UI - Customer Booking Operations">
+        <classes>
+            <class name="com.rideze.tests.booking.CustomerBookingTest" />
+        </classes>
+    </test>
+
+    <!-- Backend / API Tests -->
+    <test name="API - Toll Management Endpoints">
+        <classes>
+            <class name="com.rideze.api.TollApiTests" />
+        </classes>
+    </test>
+
+</suite>
