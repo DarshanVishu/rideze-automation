@@ -43,6 +43,7 @@ rideze-automation/
 └── pom.xml                         # Maven build configuration
 
 ## Prerequisites
+
 Ensure the following tools are installed locally and added to your system PATH:
 
  1.JDK 17 or higher (java -version)
@@ -50,7 +51,8 @@ Ensure the following tools are installed locally and added to your system PATH:
  3.Google Chrome (Current stable release)
  4.Rideze Local Dev Server running at http://localhost:3000
 
-Configuration
+## Configuration
+
 Update src/main/resources/config.properties to target your local or staging environments:
 # Base URLs
 adminBaseUrl=http://localhost:3000/admin/login
@@ -66,6 +68,7 @@ explicitWait=10
 pageLoadTimeout=30
 
 ## Test Execution
+
 1. Run Complete Regression Suite via Maven
 Execute all 15 regression test cases across UI and API modules in headless mode:
 mvn clean test -Dheadless=true
@@ -95,6 +98,7 @@ Right-click the file $\to$ select Run As $\to$ TestNG Suite.
   GET /api/tolls/pending schema contract and response validation
 
 ##Test Reports & Failure Artifacts
+
  1.ExtentReports Dashboard: Found at reports/ExtentReport.html after test execution. Displays execution timelines, step logs, and environment configurations.
 
  2.Failure Screenshots: Automatically captured upon assertion failure or runtime exception, saved directly to reports/screenshots/ and embedded into the HTML report.
