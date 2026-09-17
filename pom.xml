@@ -13,11 +13,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <selenium.version>4.20.0</selenium.version>
+        <appium.version>9.2.2</appium.version>
         <testng.version>7.9.0</testng.version>
         <webdrivermanager.version>5.8.0</webdrivermanager.version>
         <rest-assured.version>5.4.0</rest-assured.version>
         <commons-io.version>2.15.1</commons-io.version>
         <jackson.version>2.17.0</jackson.version>
+        <slf4j.version>2.0.13</slf4j.version>
     </properties>
 
     <dependencies>
@@ -26,6 +28,27 @@
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium.version}</version>
+        </dependency>
+
+        <!-- Selenium DevTools for CDP Warnings Suppression -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-devtools-v124</artifactId>
+            <version>${selenium.version}</version>
+        </dependency>
+
+        <!-- SLF4J Implementation to silence logger warnings -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- Appium Java Client (UiAutomator2 & Mobile Actions) -->
+        <dependency>
+            <groupId>io.appium</groupId>
+            <artifactId>java-client</artifactId>
+            <version>${appium.version}</version>
         </dependency>
 
         <!-- TestNG -->

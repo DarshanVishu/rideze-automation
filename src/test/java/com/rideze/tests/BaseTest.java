@@ -11,19 +11,29 @@ public class BaseTest {
 
     @BeforeMethod
     public void setUp() {
+        String testClassName = this.getClass().getSimpleName();
+
+        // If the test class is for the Driver app, force Android/Appium
+        String targetPlatform = (testClassName.contains("Driver") || testClassName.contains("Shift") || testClassName.contains("Mobile"))
+                ? "android"
+                : "chrome";
+
+        // Always tear down any leftover browser or app session from prior suites
+        DriverFactory.quitDriver();
+
         try {
-            DriverFactory.initDriver();
+            DriverFactory.initDriver(targetPlatform);
         } catch (Exception e) {
-            System.err.println("CRITICAL FAILURE INITIALIZING DRIVER IN SETUP:");
-            e.printStackTrace();
-            throw e;
+            System.err.println("Driver initialization failed, forcing clean retry: " + e.getMessage());
+            DriverFactory.quitDriver();
+            DriverFactory.initDriver(targetPlatform);
         }
     }
 
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
-        // Screenshots are handled automatically by TestListener on failure
-        //DriverFactory.quitDriver();
+        // Guarantee clean session boundaries between tests
+        DriverFactory.quitDriver();
     }
 
     protected WebDriver getDriver() {
