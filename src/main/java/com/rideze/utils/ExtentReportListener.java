@@ -12,17 +12,18 @@ import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
-import java.io.File;
-
 public class ExtentReportListener implements ITestListener {
 
     private static ExtentReports extent;
     private static final ThreadLocal<ExtentTest> test = new ThreadLocal<>();
 
+    public static ExtentTest getTest() {
+        return test.get();
+    }
+
     @Override
     public void onStart(ITestContext context) {
         String reportPath = System.getProperty("user.dir") + "/reports/ExtentReport.html";
-        new File(System.getProperty("user.dir") + "/reports/").mkdirs();
 
         ExtentSparkReporter spark = new ExtentSparkReporter(reportPath);
         spark.config().setReportName("RideZe Automation Execution Report");

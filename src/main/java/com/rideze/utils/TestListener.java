@@ -1,18 +1,14 @@
 package com.rideze.utils;
 
+import com.aventstack.extentreports.MediaEntityBuilder;
+import com.aventstack.extentreports.Status;
 import com.rideze.driver.DriverManager;
-import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
-
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class TestListener implements ITestListener {
 
@@ -38,26 +34,29 @@ public class TestListener implements ITestListener {
 
     @Override
     public void onTestFailure(ITestResult result) {
-        System.err.println("[FAIL] " + result.getMethod().getMethodName());
-        WebDriver driver = DriverManager.getDriver();
-
-        if (driver != null) {
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            String destPath = System.getProperty("user.dir") + "/reports/screenshots/" 
-                    + result.getMethod().getMethodName() + "_" + timestamp + ".png";
-
-            try {
-                FileUtils.copyFile(srcFile, new File(destPath));
-                System.err.println("Failure screenshot saved at: " + destPath);
-            } catch (IOException e) {
-                System.err.println("Could not capture failure screenshot: " + e.getMessage());
+        System.out.println("[FAIL] " + result.getMethod().getMethodName());
+        
+        try {
+            WebDriver driver = DriverManager.getDriver();
+            if (driver != null) {
+                String base64Screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
+                
+                // If using ExtentReports instance tied to the thread/listener:
+                if (ExtentReportListener.getTest() != null) {
+                    ExtentReportListener.getTest().log(
+                        Status.FAIL, 
+                        "Test Failed: " + result.getThrowable().getMessage(),
+                        MediaEntityBuilder.createScreenCaptureFromBase64String(base64Screenshot).build()
+                    );
+                }
             }
+        } catch (Exception e) {
+            System.err.println("Failed to capture screenshot: " + e.getMessage());
         }
     }
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        System.out.println("[SKIPPED] " + result.getMethod().getMethodName());
+        System.out.println("[SKIP] " + result.getMethod().getMethodName());
     }
 }
