@@ -6,11 +6,14 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
 public final class BrowserFactory {
+
     private BrowserFactory() {}
 
     public static WebDriver createDriver(String browser) {
         WebDriver driver;
-        switch (browser.toLowerCase().trim()) {
+        String targetBrowser = (browser == null) ? "chrome" : browser.toLowerCase().trim();
+
+        switch (targetBrowser) {
             case "firefox":
                 driver = new FirefoxDriver(DiverOptions.getFirefoxOptions());
                 break;
@@ -22,6 +25,7 @@ public final class BrowserFactory {
                 driver = new ChromeDriver(DiverOptions.getChromeOptions());
                 break;
         }
+
         return driver;
     }
 }

@@ -2,9 +2,10 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="Rideze Full Regression Suite" verbose="1">
 
-    <!-- Listeners must reside at the <suite> level, NOT inside <test> -->
+    <!-- Suite-level listeners -->
     <listeners>
         <listener class-name="com.rideze.utils.TestListener" />
+        <listener class-name="com.rideze.utils.ExtentReportListener" />
     </listeners>
 
     <!-- UI: Web Admin Authentication Tests -->

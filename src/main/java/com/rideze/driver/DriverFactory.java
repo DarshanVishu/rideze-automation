@@ -8,7 +8,11 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.safari.SafariDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -22,16 +26,22 @@ public class DriverFactory {
     }
 
     public static void initDriver(String platformOrBrowser) {
-        // Clean up any existing active session before switching platforms
         if (DriverManager.getDriver() != null) {
             quitDriver();
         }
 
-        String browser = (platformOrBrowser != null) ? platformOrBrowser : ConfigReader.get("browser");
+        // Priority: Passed parameter -> System Property (-Dbrowser=...) -> Config file
+        String browser = (platformOrBrowser != null) 
+                ? platformOrBrowser 
+                : System.getProperty("browser", ConfigReader.get("browser"));
+
+        boolean isHeadless = Boolean.parseBoolean(
+                System.getProperty("headless", ConfigReader.get("headless"))
+        );
 
         try {
             if ("android".equalsIgnoreCase(browser) || "mobile".equalsIgnoreCase(browser)) {
-                // 1. Mobile Appium Driver Configuration
+                // Mobile Appium configuration
                 UiAutomator2Options options = new UiAutomator2Options()
                         .setDeviceName(ConfigReader.get("mobileDeviceName"))
                         .setPlatformName(ConfigReader.get("mobilePlatformName"))
@@ -46,7 +56,6 @@ public class DriverFactory {
                         options
                 );
 
-                // Handle Expo Go Launcher & automatically tap into RideZe Driver
                 try {
                     String pkg = ConfigReader.get("mobileAppPackage");
                     androidDriver.activateApp(pkg);
@@ -59,12 +68,8 @@ public class DriverFactory {
                                 )
                         );
                         projectCard.click();
-                        
-                        // Wait for the Metro bundler to mount the UI components
                         Thread.sleep(4000);
-                    } catch (Exception notOnHomeScreen) {
-                        // Project is already rendered and in foreground
-                    }
+                    } catch (Exception notOnHomeScreen) {}
                 } catch (Exception e) {
                     try {
                         androidDriver.activateApp("host.exp.exponent");
@@ -74,18 +79,55 @@ public class DriverFactory {
                 DriverManager.setDriver(androidDriver);
 
             } else {
-                // 2. Desktop Web Driver Configuration (Chrome / Firefox)
+                // Cross-Browser Web Engine
                 WebDriver webDriver;
-                if ("firefox".equalsIgnoreCase(browser)) {
-                    webDriver = new FirefoxDriver();
-                } else {
-                    ChromeOptions options = new ChromeOptions();
-                    options.addArguments("--start-maximized");
-                    options.addArguments("--remote-allow-origins=*");
-                    if (Boolean.parseBoolean(ConfigReader.get("headless"))) {
-                        options.addArguments("--headless=new");
-                    }
-                    webDriver = new ChromeDriver(options);
+                String normalizedBrowser = browser.toLowerCase().trim();
+
+                switch (normalizedBrowser) {
+                    case "firefox":
+                        FirefoxOptions firefoxOptions = new FirefoxOptions();
+                        if (isHeadless) {
+                            firefoxOptions.addArguments("-headless");
+                        }
+                        webDriver = new FirefoxDriver(firefoxOptions);
+                        break;
+
+                    case "edge":
+                        EdgeOptions edgeOptions = new EdgeOptions();
+                        edgeOptions.addArguments("--remote-allow-origins=*");
+                        if (isHeadless) {
+                            edgeOptions.addArguments("--headless=new");
+                            edgeOptions.addArguments("--no-sandbox");
+                            edgeOptions.addArguments("--disable-dev-shm-usage");
+                        } else {
+                            edgeOptions.addArguments("--start-maximized");
+                        }
+                        webDriver = new EdgeDriver(edgeOptions);
+                        break;
+
+                    case "safari":
+                        // Safari does not support headless mode
+                        webDriver = new SafariDriver();
+                        break;
+
+                    case "chrome":
+                    default:
+                        ChromeOptions chromeOptions = new ChromeOptions();
+                        chromeOptions.addArguments("--remote-allow-origins=*");
+                        System.setProperty("webdriver.chrome.silentOutput", "true");
+                        java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(java.util.logging.Level.SEVERE);
+
+                        if (isHeadless) {
+                            chromeOptions.addArguments("--headless=new");
+                            chromeOptions.addArguments("--no-sandbox");
+                            chromeOptions.addArguments("--disable-dev-shm-usage");
+                            chromeOptions.addArguments("--disable-gpu");
+                            chromeOptions.addArguments("--window-size=1920,1080");
+                        } else {
+                            chromeOptions.addArguments("--start-maximized");
+                        }
+                        webDriver = new ChromeDriver(chromeOptions);
+                        break;
                 }
 
                 webDriver.manage().timeouts().implicitlyWait(
@@ -95,11 +137,15 @@ public class DriverFactory {
                         Duration.ofSeconds(Long.parseLong(ConfigReader.get("pageLoadTimeout")))
                 );
 
+                if (!isHeadless && !"safari".equalsIgnoreCase(normalizedBrowser)) {
+                    webDriver.manage().window().maximize();
+                }
+
                 webDriver.get(ConfigReader.get("baseUrl"));
                 DriverManager.setDriver(webDriver);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize driver: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to initialize driver for " + browser + ": " + e.getMessage(), e);
         }
     }
 
