@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
-<suite name="Rideze Full Regression Suite" verbose="1" parallel="classes" thread-count="2">
+<suite name="Rideze Full Regression Suite" verbose="1">
 
+    <!-- Suite-level listeners -->
     <listeners>
         <listener class-name="com.rideze.utils.TestListener" />
+        <listener class-name="com.rideze.utils.ExtentReportListener" />
     </listeners>
 
-    <!-- UI: Authentication Tests -->
+    <!-- UI: Web Admin Authentication Tests -->
     <test name="UI - Authentication Tests">
         <classes>
             <class name="com.rideze.tests.LoginTest" />
         </classes>
     </test>
 
-    <!-- UI: Fleet Management Tests -->
+    <!-- UI: Web Fleet Management Tests -->
     <test name="UI - Fleet Management Tests">
         <classes>
             <class name="com.rideze.tests.fleet.VehiclesTest" />
@@ -35,6 +37,13 @@
         </classes>
     </test>
 
+    <!-- UI: Driver Mobile App Operations -->
+    <test name="UI - Driver Mobile App Lifecycle">
+        <classes>
+            <class name="com.rideze.tests.DriverShiftStatusTest" />
+        </classes>
+    </test>
+
     <!-- Backend / API Tests -->
     <test name="API - Toll Management Endpoints">
         <classes>
@@ -45,8 +54,8 @@
     <!-- Security Tests -->
     <test name="Security Regression Tests">
         <classes>
-            <class name="com.rideze.tests.security.BookingIdorSecurityTest"/>
-            <class name="com.rideze.tests.security.PaymentSecurityTest"/>
+            <class name="com.rideze.tests.security.BookingIdorSecurityTest" />
+            <class name="com.rideze.tests.security.PaymentSecurityTest" />
         </classes>
     </test>
 

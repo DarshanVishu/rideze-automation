@@ -1,7 +1,13 @@
 package com.rideze.pages;
 
+import com.rideze.driver.DriverManager;
 import com.rideze.pages.booking.DashboardPage;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 public class LoginPage extends BasePage {
 
@@ -31,21 +37,38 @@ public class LoginPage extends BasePage {
         clickSignIn();
     }
 
-    // Returns DashboardPage to allow method chaining in test classes
     public DashboardPage loginAsAdmin(String email, String password) {
         login(email, password);
         return new DashboardPage();
     }
 
     public boolean isLoginPageDisplayed() {
-        return isDisplayed(signInButton);
+        try {
+            WebDriverWait wait = new WebDriverWait(DriverManager.getDriver(), Duration.ofSeconds(10));
+            WebElement btn = wait.until(ExpectedConditions.visibilityOfElementLocated(signInButton));
+            return btn != null && btn.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public boolean isBrandingHeaderDisplayed() {
-        return isDisplayed(brandingHeader);
+        try {
+            WebDriverWait wait = new WebDriverWait(DriverManager.getDriver(), Duration.ofSeconds(10));
+            WebElement header = wait.until(ExpectedConditions.visibilityOfElementLocated(brandingHeader));
+            return header != null && header.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public boolean isErrorMessageDisplayed() {
-        return isDisplayed(errorMessage);
+        try {
+            WebDriverWait wait = new WebDriverWait(DriverManager.getDriver(), Duration.ofSeconds(10));
+            WebElement err = wait.until(ExpectedConditions.visibilityOfElementLocated(errorMessage));
+            return err != null && err.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

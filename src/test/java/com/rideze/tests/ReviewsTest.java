@@ -6,9 +6,13 @@ import com.rideze.pages.reviews.ReviewsPage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.time.Duration;
 
 public class ReviewsTest extends BaseTest {
 
@@ -16,27 +20,43 @@ public class ReviewsTest extends BaseTest {
 
     @BeforeMethod
     public void setupReviews() {
+        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(10));
         getDriver().get(ConfigReader.get("baseUrl"));
 
+        // 1. Ensure authenticated session
         LoginPage loginPage = new LoginPage();
-        if (loginPage.isLoginPageDisplayed()) {
+        try {
+            WebDriverWait loginCheckWait = new WebDriverWait(getDriver(), Duration.ofSeconds(3));
+            loginCheckWait.until(d -> loginPage.isLoginPageDisplayed() || !d.findElements(By.xpath("//input[@type='password']")).isEmpty());
             loginPage.loginAsAdmin(ConfigReader.get("adminEmail"), ConfigReader.get("adminPassword"));
+        } catch (Exception ignored) {
+            // Already logged in
         }
 
-        // Navigate via sidebar to preserve React session/token state
+        // 2. Safely navigate to Reviews section via sidebar or URL
+        By reviewsLink = By.xpath("//a[contains(@href,'reviews') or contains(.,'Reviews')] | //button[contains(.,'Reviews')]");
         try {
-            By reviewsLink = By.xpath("//a[contains(@href,'reviews') or contains(.,'Reviews')] | //button[contains(.,'Reviews')]");
-            WebElement navItem = getDriver().findElement(reviewsLink);
+            WebElement navItem = wait.until(ExpectedConditions.elementToBeClickable(reviewsLink));
             ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", navItem);
         } catch (Exception e) {
-            getDriver().get("http://localhost:3001/reviews");
+            String targetUrl = ConfigReader.get("baseUrl");
+            if (targetUrl.endsWith("/")) {
+                targetUrl = targetUrl.substring(0, targetUrl.length() - 1);
+            }
+            getDriver().get(targetUrl + "/reviews");
         }
 
+        // 3. Fallback: If redirected back to login, re-authenticate immediately
         try {
-            Thread.sleep(1500); // Allow data fetch
-        } catch (InterruptedException ignored) {}
+            if (loginPage.isLoginPageDisplayed()) {
+                loginPage.loginAsAdmin(ConfigReader.get("adminEmail"), ConfigReader.get("adminPassword"));
+                WebElement navItem = wait.until(ExpectedConditions.elementToBeClickable(reviewsLink));
+                ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", navItem);
+            }
+        } catch (Exception ignored) {}
 
         reviewsPage = new ReviewsPage();
+        wait.until(d -> reviewsPage.areReviewsDisplayed());
     }
 
     @Test(description = "Verify reviews list displays on page")
@@ -47,6 +67,9 @@ public class ReviewsTest extends BaseTest {
     @Test(description = "Verify searching reviews by customer or driver name")
     public void testSearchReviewsByKeyword() {
         reviewsPage.searchReview("Great");
+        try {
+            Thread.sleep(1000); // Allow debounce/table filter to settle
+        } catch (InterruptedException ignored) {}
         Assert.assertTrue(reviewsPage.areReviewsDisplayed(), "Reviews container not visible after search");
     }
 

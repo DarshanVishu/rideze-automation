@@ -2,14 +2,17 @@ package com.rideze.tests;
 
 import com.rideze.config.ConfigReader;
 import com.rideze.pages.LoginPage;
+import com.rideze.utils.ExtentReportListener;
 import org.openqa.selenium.By;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.time.Duration;
 
+@Listeners(ExtentReportListener.class)
 public class LoginTest extends BaseTest {
 
     @Test(description = "Verify admin login page renders branding and elements")

@@ -10,35 +10,68 @@ public final class ConfigReader {
     private ConfigReader() {}
 
     static {
-        InputStream is = ConfigReader.class.getClassLoader().getResourceAsStream("config/qa.properties");
+        String activeEnv = System.getProperty("env", "qa").trim().toLowerCase();
+        String configFile = "config/" + activeEnv + ".properties";
+
+        InputStream is = ConfigReader.class.getClassLoader().getResourceAsStream(configFile);
         if (is == null) {
-            is = ConfigReader.class.getClassLoader().getResourceAsStream("qa.properties");
+            is = ConfigReader.class.getClassLoader().getResourceAsStream(activeEnv + ".properties");
+        }
+        if (is == null) {
+            is = ConfigReader.class.getClassLoader().getResourceAsStream("config.properties");
         }
 
-        if (is == null) {
-            throw new RuntimeException("Could not find qa.properties in src/main/resources or src/main/resources/config!");
-        }
-
-        try {
-            properties.load(is);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read qa.properties", e);
+        if (is != null) {
+            try {
+                properties.load(is);
+            } catch (Exception e) {
+                System.err.println("Failed to read properties file for environment: " + activeEnv + " - " + e.getMessage());
+            }
+        } else {
+            System.err.println("Warning: Configuration file not found on classpath for environment: " + activeEnv);
         }
     }
 
     public static String get(String key) {
-        String val = properties.getProperty(key);
-        if (val == null) {
-            throw new RuntimeException("Property key '" + key + "' was not found in qa.properties.");
+        // Priority 1: Command line / JVM System property (e.g., -DbaseUrl=...)
+        String sysVal = System.getProperty(key);
+        if (sysVal != null && !sysVal.trim().isEmpty()) {
+            return sysVal.trim();
         }
-        return val.trim();
+
+        // Priority 2: OS Environment Variable (exact key or UPPERCASE)
+        String envVal = System.getenv(key);
+        if (envVal == null || envVal.trim().isEmpty()) {
+            envVal = System.getenv(key.toUpperCase().replace(".", "_"));
+        }
+        if (envVal != null && !envVal.trim().isEmpty()) {
+            return envVal.trim();
+        }
+
+        // Priority 3: Properties file value
+        String val = properties.getProperty(key);
+        if (val != null && !val.trim().isEmpty()) {
+            return val.trim();
+        }
+
+        return null;
+    }
+
+    public static String get(String key, String defaultValue) {
+        String value = get(key);
+        return (value != null && !value.trim().isEmpty()) ? value : defaultValue;
     }
 
     public static int getInt(String key) {
-        return Integer.parseInt(get(key));
+        String val = get(key);
+        if (val == null) {
+            throw new RuntimeException("Property key '" + key + "' was not found in configuration.");
+        }
+        return Integer.parseInt(val);
     }
 
     public static boolean getBoolean(String key) {
-        return Boolean.parseBoolean(get(key));
+        String val = get(key);
+        return Boolean.parseBoolean(val);
     }
 }

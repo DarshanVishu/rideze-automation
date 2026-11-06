@@ -16,7 +16,17 @@ public class VehiclesTest extends BaseTest {
 
     @BeforeMethod
     public void loginAndNavigateToFleet() {
-        getDriver().get(ConfigReader.get("baseUrl"));
+        String base = ConfigReader.get("baseUrl");
+        if (base == null || base.trim().isEmpty()) {
+            base = "http://localhost:3001";
+        }
+        // Normalize: strip trailing slash AND strip /login if already present
+        base = base.replaceAll("/+$", "");
+        if (base.endsWith("/login")) {
+            base = base.substring(0, base.length() - "/login".length());
+        }
+
+        getDriver().get(base + "/login");
 
         LoginPage loginPage = new LoginPage();
         if (loginPage.isLoginPageDisplayed()) {
@@ -26,7 +36,7 @@ public class VehiclesTest extends BaseTest {
             );
             vehiclesPage = dashboardPage.navigateToFleet();
         } else {
-            getDriver().get("http://localhost:3001/fleet");
+            getDriver().get(base + "/fleet");
             vehiclesPage = new VehiclesPage();
         }
     }
