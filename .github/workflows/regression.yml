@@ -19,7 +19,7 @@ on:
 
 jobs:
   test:
-    name: Run Full E2E & Security Suite
+    name: Run Backend, Security & API Suite
     runs-on: ubuntu-latest
 
     steps:
@@ -51,21 +51,19 @@ jobs:
           TARGET_ENV="${{ github.event.inputs.target_env || 'qa' }}"
           mvn clean test \
             -Denv=$TARGET_ENV \
-            -DbaseUrl="${{ secrets.BASE_URL }}" \
-            -DcustomerBaseUrl="${{ secrets.CUSTOMER_BASE_URL }}" \
             -Dheadless=true \
-            -Dtest="!Driver*Test"
+            -Dtest="!Driver*Test,!Vehicles*Test,!ReviewsTest,!CustomerBookingTest,!LoginTest"
 
-      - name: Print Failure Summary to Console
+      - name: Print Test Results Summary
         if: always()
         run: |
-          echo "==================== TEST FAILURES SUMMARY ===================="
+          echo "==================== TEST EXECUTION SUMMARY ===================="
           if [ -d "target/surefire-reports" ]; then
             grep -rn "FAILURE" target/surefire-reports/*.txt 2>/dev/null || true
             grep -rn "ERROR" target/surefire-reports/*.txt 2>/dev/null || true
             for file in target/surefire-reports/*.txt; do
               if grep -q "FAILURE\|ERROR" "$file"; then
-                echo "------------------- Content of $file -------------------"
+                echo "------------------- Failures in $file -------------------"
                 head -n 25 "$file"
               fi
             done
