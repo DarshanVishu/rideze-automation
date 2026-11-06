@@ -33,6 +33,46 @@ jobs:
           java-version: "17"
           cache: "maven"
 
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Frontend Dependencies
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+
+      - name: Build and Start Frontend on Port 3001
+        env:
+          PORT: 3001
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          pnpm run build || true
+          nohup pnpm run start -- -p 3001 > web.log 2>&1 &
+          echo "Started web server in background."
+
+      - name: Block and Wait for Frontend (Port 3001)
+        run: |
+          echo "Waiting for http://localhost:3001/login to return HTTP 200/302..."
+          for i in {1..30}; do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" http://localhost:3001/login || true)
+            echo "Attempt $i: Received HTTP $STATUS"
+            if [[ "$STATUS" =~ ^(200|301|302|307|308)$ ]]; then
+              echo "Server is fully UP and accepting traffic!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server failed to start within 60 seconds. Showing web.log output:"
+          cat web.log || true
+          exit 1
+
       - name: Ensure Google Chrome is Installed
         run: |
           sudo apt-get update
@@ -43,14 +83,14 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          CUSTOMER_BASE_URL: ${{ secrets.CUSTOMER_BASE_URL }}
+          CUSTOMER_BASE_URL: "http://localhost:3001"
           CUSTOMER_PHONE: ${{ secrets.CUSTOMER_PHONE }}
           CUSTOMER_OTP: ${{ secrets.CUSTOMER_OTP }}
         run: |
           TARGET_ENV="${{ github.event.inputs.target_env || 'qa' }}"
           mvn clean test \
             -Denv=$TARGET_ENV \
-            -DbaseUrl="${{ secrets.BASE_URL || secrets.CUSTOMER_BASE_URL }}" \
+            -DbaseUrl="http://localhost:3001" \
             -Dheadless=true \
             -Dtest="!DriverShiftStatusTest"
 
