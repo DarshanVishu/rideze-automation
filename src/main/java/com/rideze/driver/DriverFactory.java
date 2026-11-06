@@ -30,18 +30,18 @@ public class DriverFactory {
             quitDriver();
         }
 
-        // Priority: Passed parameter -> System Property (-Dbrowser=...) -> Config file
+        String browserConfig = ConfigReader.get("browser");
         String browser = (platformOrBrowser != null) 
                 ? platformOrBrowser 
-                : System.getProperty("browser", ConfigReader.get("browser"));
+                : System.getProperty("browser", browserConfig != null ? browserConfig : "chrome");
 
+        String headlessConfig = ConfigReader.get("headless");
         boolean isHeadless = Boolean.parseBoolean(
-                System.getProperty("headless", ConfigReader.get("headless"))
+                System.getProperty("headless", headlessConfig != null ? headlessConfig : "false")
         );
 
         try {
             if ("android".equalsIgnoreCase(browser) || "mobile".equalsIgnoreCase(browser)) {
-                // Mobile Appium configuration
                 UiAutomator2Options options = new UiAutomator2Options()
                         .setDeviceName(ConfigReader.get("mobileDeviceName"))
                         .setPlatformName(ConfigReader.get("mobilePlatformName"))
@@ -79,7 +79,6 @@ public class DriverFactory {
                 DriverManager.setDriver(androidDriver);
 
             } else {
-                // Cross-Browser Web Engine
                 WebDriver webDriver;
                 String normalizedBrowser = browser.toLowerCase().trim();
 
@@ -106,7 +105,6 @@ public class DriverFactory {
                         break;
 
                     case "safari":
-                        // Safari does not support headless mode
                         webDriver = new SafariDriver();
                         break;
 
@@ -130,18 +128,36 @@ public class DriverFactory {
                         break;
                 }
 
-                webDriver.manage().timeouts().implicitlyWait(
-                        Duration.ofSeconds(Long.parseLong(ConfigReader.get("implicitWait")))
-                );
-                webDriver.manage().timeouts().pageLoadTimeout(
-                        Duration.ofSeconds(Long.parseLong(ConfigReader.get("pageLoadTimeout")))
-                );
+                // Resilient timeout fallbacks
+                long implicitWait = 10;
+                try {
+                    String waitProp = ConfigReader.get("implicitWait");
+                    if (waitProp != null && !waitProp.trim().isEmpty()) {
+                        implicitWait = Long.parseLong(waitProp.trim());
+                    }
+                } catch (Exception ignored) {}
+
+                long pageLoadTimeout = 30;
+                try {
+                    String timeoutProp = ConfigReader.get("pageLoadTimeout");
+                    if (timeoutProp != null && !timeoutProp.trim().isEmpty()) {
+                        pageLoadTimeout = Long.parseLong(timeoutProp.trim());
+                    }
+                } catch (Exception ignored) {}
+
+                webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(implicitWait));
+                webDriver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(pageLoadTimeout));
 
                 if (!isHeadless && !"safari".equalsIgnoreCase(normalizedBrowser)) {
                     webDriver.manage().window().maximize();
                 }
 
-                webDriver.get(ConfigReader.get("baseUrl"));
+                // Resilient URL navigation
+                String targetUrl = System.getProperty("baseUrl", ConfigReader.get("baseUrl"));
+                if (targetUrl != null && !targetUrl.trim().isEmpty()) {
+                    webDriver.get(targetUrl.trim());
+                }
+
                 DriverManager.setDriver(webDriver);
             }
         } catch (Exception e) {

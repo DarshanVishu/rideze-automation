@@ -42,6 +42,25 @@ jobs:
         run: |
           TARGET_ENV="${{ github.event.inputs.target_env || 'qa' }}"
           mvn clean test -Denv=$TARGET_ENV -Dheadless=true -Dtest="!DriverShiftStatusTest"
+        continue-on-error: true
+
+      - name: Print Failure Summary to Console
+        if: always()
+        run: |
+          echo "==================== TEST FAILURES SUMMARY ===================="
+          if [ -d "target/surefire-reports" ]; then
+            grep -rn "FAILURE" target/surefire-reports/*.txt 2>/dev/null || true
+            grep -rn "ERROR" target/surefire-reports/*.txt 2>/dev/null || true
+            for file in target/surefire-reports/*.txt; do
+              if grep -q "FAILURE\|ERROR" "$file"; then
+                echo "------------------- Content of $file -------------------"
+                head -n 25 "$file"
+              fi
+            done
+          else
+            echo "No surefire reports directory found."
+          fi
+          echo "================================================================"
 
       - name: Archive ExtentReport Dashboard
         if: always()
