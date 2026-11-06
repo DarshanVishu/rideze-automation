@@ -16,8 +16,15 @@ public class VehiclesTest extends BaseTest {
 
     @BeforeMethod
     public void loginAndNavigateToFleet() {
-        String base = ConfigReader.get("baseUrl", "http://localhost:3001");
-        base = base.replaceAll("/+$", ""); // strip trailing slashes
+        String base = ConfigReader.get("baseUrl");
+        if (base == null || base.trim().isEmpty()) {
+            base = "http://localhost:3001";
+        }
+        // Normalize: strip trailing slash AND strip /login if already present
+        base = base.replaceAll("/+$", "");
+        if (base.endsWith("/login")) {
+            base = base.substring(0, base.length() - "/login".length());
+        }
 
         getDriver().get(base + "/login");
 
