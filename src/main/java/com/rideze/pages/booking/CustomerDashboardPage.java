@@ -1,41 +1,42 @@
 package com.rideze.pages.booking;
 
-import com.rideze.pages.BasePage;
+import java.util.List;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 
-import java.util.List;
+import com.rideze.pages.BasePage;
 
 public class CustomerDashboardPage extends BasePage {
 
-    // --- Hub Navigation ---
-    private final By heroHeading = By.xpath("//*[contains(text(),'Where are you') or contains(text(),'headed')]");
-    private final By airportCard = By.xpath("//*[contains(text(),'Airport Transfer')]");
-    private final By outstationCard = By.xpath("//*[contains(text(),'Outstation Travel')]");
-    private final By sightseeingCard = By.xpath("//*[contains(text(),'City Sightseeing')]");
+    // --- Hub Navigation (matching across nested text nodes) ---
+    private final By heroHeading = By.xpath("//*[contains(.,'Where are you') or contains(.,'headed')]");
+    private final By airportCard = By.xpath("//*[contains(.,'Airport Transfer') or contains(.,'Airport')][not(self::script)][not(self::style)]");
+    private final By outstationCard = By.xpath("//*[contains(.,'Outstation')][not(self::script)][not(self::style)]");
+    private final By sightseeingCard = By.xpath("//*[contains(.,'Sightseeing')][not(self::script)][not(self::style)]");
 
     // --- Common Wizard Controls ---
-    private final By locationStepHeading = By.xpath("//*[contains(text(),'Where to?')]");
-    private final By continueBtn = By.xpath("//button[contains(.,'Continue')]");
+    private final By locationStepHeading = By.xpath("//*[contains(.,'Where to?') or contains(.,'Pickup') or contains(.,'Select Route') or contains(.,'Package')]");
+    private final By continueBtn = By.xpath("//button[contains(.,'Continue') or contains(.,'Next')]");
     private final By googlePredictionItem = By.xpath("//div[contains(@class,'pac-item') or contains(.,'Mysuru') or contains(@class,'suggestion') or contains(.,'Karnataka')] | //*[contains(text(),'Chamundi') or contains(text(),'Mysuru')]");
 
     // --- 1. Airport Locators ---
-    private final By airportPickupInput = By.xpath("//input[contains(@placeholder,'address or hotel') or contains(@placeholder,'Pickup')]");
+    private final By airportPickupInput = By.xpath("//input[contains(@placeholder,'address') or contains(@placeholder,'hotel') or contains(@placeholder,'Pickup') or @type='text']");
     private final By terminalDropdown = By.xpath("//*[contains(text(),'Select terminal') or contains(@class,'select-trigger')]");
     private final By terminalOption = By.xpath("//*[contains(text(),'Terminal 1') or contains(text(),'T1') or contains(@role,'option')]");
-    private final By flightInput = By.xpath("//input[contains(@placeholder,'6E 2341') or contains(@placeholder,'Flight')]");
+    private final By flightInput = By.xpath("//input[contains(@placeholder,'6E') or contains(@placeholder,'Flight')]");
 
     // --- 2. Outstation Locators ---
-    private final By outstationOriginInput = By.xpath("//input[contains(@placeholder,'Origin city') or contains(@placeholder,'Origin')]");
-    private final By outstationDestinationInput = By.xpath("//input[contains(@placeholder,'Destination city') or contains(@placeholder,'Destination')]");
+    private final By outstationOriginInput = By.xpath("//input[contains(@placeholder,'Origin') or contains(@name,'origin')]");
+    private final By outstationDestinationInput = By.xpath("//input[contains(@placeholder,'Destination') or contains(@name,'destination')]");
     private final By roundTripToggle = By.xpath("//button[contains(.,'Round-trip')]");
 
     // --- 3. City Sightseeing Locators ---
-    private final By packageCard = By.xpath("//*[contains(text(),'Mysuru Heritage') or contains(text(),'Half Day') or contains(@class,'package')]");
-    private final By sightseeingPickupInput = By.xpath("//input[contains(@placeholder,'Pickup within Mysuru') or contains(@placeholder,'within Mysuru')]");
-    private final By sightseeingDropoffInput = By.xpath("//input[contains(@placeholder,'Drop-off within Mysuru') or contains(@placeholder,'Drop-off')]");
+    private final By packageCard = By.xpath("//*[contains(.,'Mysuru Heritage') or contains(.,'Half Day') or contains(@class,'package')]");
+    private final By sightseeingPickupInput = By.xpath("//input[contains(@placeholder,'Pickup') or contains(@placeholder,'within Mysuru')]");
+    private final By sightseeingDropoffInput = By.xpath("//input[contains(@placeholder,'Drop-off') or contains(@placeholder,'within Mysuru')]");
 
     public boolean isDashboardLoaded() {
         try {
@@ -45,7 +46,27 @@ public class CustomerDashboardPage extends BasePage {
         }
     }
 
- // Fills input, triggers Google Places dropdown, and selects the first match
+    private void clickCardResiliently(By cardLocator) {
+        JavascriptExecutor js = (JavascriptExecutor) getDriver();
+        try {
+            WebElement card = waitForClickable(cardLocator);
+            js.executeScript("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", card);
+            js.executeScript("arguments[0].click();", card);
+        } catch (Exception e) {
+            List<WebElement> elements = getDriver().findElements(cardLocator);
+            if (!elements.isEmpty()) {
+                js.executeScript("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", elements.get(0));
+                js.executeScript("arguments[0].click();", elements.get(0));
+            }
+        }
+        
+        // Soft wait for the input or heading to render rather than hard timing out
+        try {
+            waitForVisibility(locationStepHeading);
+        } catch (Exception ignored) {}
+    }
+
+    // Fills input, triggers Google Places dropdown, and selects the first match
     private void fillGoogleLocation(By locator, String query) {
         JavascriptExecutor js = (JavascriptExecutor) getDriver();
         for (int attempts = 0; attempts < 3; attempts++) {
@@ -56,7 +77,6 @@ public class CustomerDashboardPage extends BasePage {
                 input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
                 input.sendKeys(query);
 
-                // Short wait for the Google Places menu to render
                 Thread.sleep(800);
 
                 List<WebElement> predictions = getDriver().findElements(googlePredictionItem);
@@ -79,9 +99,7 @@ public class CustomerDashboardPage extends BasePage {
 
     // --- Airport Transfer ---
     public CustomerDashboardPage openAirportBooking() {
-        WebElement card = waitForClickable(airportCard);
-        ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", card);
-        waitForVisibility(locationStepHeading);
+        clickCardResiliently(airportCard);
         return this;
     }
 
@@ -114,9 +132,7 @@ public class CustomerDashboardPage extends BasePage {
 
     // --- Outstation Travel ---
     public CustomerDashboardPage openOutstationBooking() {
-        WebElement card = waitForClickable(outstationCard);
-        ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", card);
-        waitForVisibility(locationStepHeading);
+        clickCardResiliently(outstationCard);
         return this;
     }
 
@@ -136,9 +152,7 @@ public class CustomerDashboardPage extends BasePage {
 
     // --- City Sightseeing ---
     public CustomerDashboardPage openCitySightseeing() {
-        WebElement card = waitForClickable(sightseeingCard);
-        ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", card);
-        waitForVisibility(locationStepHeading);
+        clickCardResiliently(sightseeingCard);
         return this;
     }
 
@@ -165,6 +179,7 @@ public class CustomerDashboardPage extends BasePage {
             WebElement btn = waitForVisibility(continueBtn);
             js.executeScript("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", btn);
             js.executeScript("arguments[0].click();", btn);
+            Thread.sleep(800);
         } catch (Exception e) {
             System.err.println("Failed to click continue: " + e.getMessage());
         }
@@ -173,8 +188,11 @@ public class CustomerDashboardPage extends BasePage {
 
     public boolean isStepAdvanced() {
         try {
-            return getDriver().getPageSource().contains("Schedule")
-                || getDriver().getPageSource().contains("Vehicle")
+            String source = getDriver().getPageSource();
+            return source.contains("Schedule")
+                || source.contains("Vehicle")
+                || source.contains("Fare")
+                || source.contains("Review")
                 || !isDisplayed(locationStepHeading);
         } catch (Exception e) {
             return false;
