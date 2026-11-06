@@ -39,10 +39,20 @@ jobs:
           sudo apt-get install -y google-chrome-stable
 
       - name: Run TestNG Suite
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CUSTOMER_BASE_URL: ${{ secrets.CUSTOMER_BASE_URL }}
+          CUSTOMER_PHONE: ${{ secrets.CUSTOMER_PHONE }}
+          CUSTOMER_OTP: ${{ secrets.CUSTOMER_OTP }}
         run: |
           TARGET_ENV="${{ github.event.inputs.target_env || 'qa' }}"
-          mvn clean test -Denv=$TARGET_ENV -Dheadless=true -Dtest="!DriverShiftStatusTest"
-        continue-on-error: true
+          mvn clean test \
+            -Denv=$TARGET_ENV \
+            -DbaseUrl="${{ secrets.BASE_URL || secrets.CUSTOMER_BASE_URL }}" \
+            -Dheadless=true \
+            -Dtest="!DriverShiftStatusTest"
 
       - name: Print Failure Summary to Console
         if: always()
