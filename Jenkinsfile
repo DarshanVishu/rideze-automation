@@ -1,12 +1,11 @@
-cat << 'EOF' > Jenkinsfile
 pipeline {
     agent any
 
     parameters {
         string(
             name: 'SUITE_XML',
-            defaultValue: 'src/test/resources/testng.xml',
-            description: 'Path to TestNG XML file (e.g. src/test/resources/testng.xml)'
+            defaultValue: 'testng.xml',
+            description: 'Path to TestNG XML file (e.g. testng.xml)'
         )
         booleanParam(
             name: 'HEADLESS',
@@ -110,4 +109,3 @@ pipeline {
         }
     }
 }
-EOF
