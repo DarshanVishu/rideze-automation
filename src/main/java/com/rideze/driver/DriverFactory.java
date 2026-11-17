@@ -72,7 +72,7 @@ public class DriverFactory {
                     } catch (Exception notOnHomeScreen) {}
                 } catch (Exception e) {
                     try {
-                        androidDriver.activateApp("host.exp.exponent");
+                        androidDriver.activateApp("com.ridezedriver");
                     } catch (Exception ignored) {}
                 }
 
