@@ -20,7 +20,17 @@ public class VehiclesNegativeTest extends BaseTest {
 
     @BeforeMethod
     public void loginAndNavigateToFleet() {
-        getDriver().get(ConfigReader.get("baseUrl"));
+        String base = ConfigReader.get("baseUrl");
+        if (base == null || base.trim().isEmpty()) {
+            base = "http://localhost:3001";
+        }
+        // Normalize: strip trailing slash AND strip /login if already present
+        base = base.replaceAll("/+$", "");
+        if (base.endsWith("/login")) {
+            base = base.substring(0, base.length() - "/login".length());
+        }
+
+        getDriver().get(base + "/login");
 
         LoginPage loginPage = new LoginPage();
         if (loginPage.isLoginPageDisplayed()) {
@@ -30,7 +40,7 @@ public class VehiclesNegativeTest extends BaseTest {
             );
             vehiclesPage = dashboardPage.navigateToFleet();
         } else {
-            getDriver().get("http://localhost:3001/fleet");
+            getDriver().get(base + "/fleet");
             vehiclesPage = new VehiclesPage();
         }
     }
@@ -46,7 +56,6 @@ public class VehiclesNegativeTest extends BaseTest {
     public void testAddVehicleWithEmptyFields() {
         vehiclesPage.clickAddVehicle();
 
-        // Check HTML5 validity on required plate input before attempting submit
         WebElement regInput = getDriver().findElement(
                 By.xpath("//div[contains(@role,'dialog') or contains(@class,'modal') or contains(.,'Add Vehicle')][last()]//*[text()='Registration Number']/following::input[1]")
         );
