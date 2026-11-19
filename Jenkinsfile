@@ -60,7 +60,7 @@ pipeline {
                         baseUrl = "http://localhost:3000"
                     }
 
-                    bat """
+                    bat "mvn test -DsuiteXmlFile=src/test/resources/${params.SUITE_XML} -DbaseUrl=${baseUrl} -DthreadCount=${params.THREAD_COUNT} -Dheadless=true"
                         mvn test \
                         -DsuiteXmlFile=src/test/resources/${params.SUITE_XML} \
                         -DbaseUrl=${baseUrl} \
