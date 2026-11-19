@@ -1,33 +1,38 @@
-cat << 'EOF' > Jenkinsfile
 pipeline {
     agent any
 
+    tools {
+        jdk 'JDK-21'     // Ensure this matches your Global Tool Configuration name in Jenkins
+        maven 'Maven-3'  // Ensure this matches your Maven installation name in Jenkins
+    }
+
     parameters {
-        string(
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['staging', 'qa', 'local'],
+            description: 'Target environment URL profile'
+        )
+        choice(
             name: 'SUITE_XML',
-            defaultValue: 'src/test/resources/testng.xml',
-            description: 'Path to TestNG XML file (e.g. src/test/resources/testng.xml)'
-        )
-        booleanParam(
-            name: 'HEADLESS',
-            defaultValue: true,
-            description: 'Run browsers in headless mode'
+            choices: ['testng-smoke.xml', 'testng-regression.xml', 'testng-api.xml'],
+            description: 'Select the TestNG suite to execute'
         )
         string(
-            name: 'BASE_URL',
-            defaultValue: '',
-            description: 'Optional target URL override (leave blank to use config.properties)'
+            name: 'THREAD_COUNT',
+            defaultValue: '3',
+            description: 'Number of parallel threads for execution'
         )
+    }
+
+    triggers {
+        // Runs automatically every night at 2:00 AM
+        cron('H 2 * * *')
     }
 
     environment {
-        ALLURE_RESULTS_DIR = 'target/allure-results'
-    }
-
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '15'))
-        timeout(time: 30, unit: 'MINUTES')
-        timestamps()
+        // Map credentials securely from Jenkins Credentials Manager
+        TEST_USER_EMAIL = credentials('qa-staging-email')
+        TEST_USER_PASS  = credentials('qa-staging-password')
     }
 
     stages {
@@ -37,41 +42,31 @@ pipeline {
             }
         }
 
-        stage('Verify Environment') {
+        stage('Compile & Validate') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            java -version
-                            mvn -version
-                        '''
-                    } else {
-                        bat '''
-                            java -version
-                            call mvn -version
-                        '''
-                    }
-                }
+                bat 'mvn clean test-compile'
             }
         }
 
-        stage('Execute Rideze Automation Suite') {
+        stage('Execute Automated Suite') {
             steps {
                 script {
-                    def suiteArg = fileExists(params.SUITE_XML.trim()) ? "-DsuiteXmlFile=${params.SUITE_XML.trim()}" : ""
-                    def urlArg = params.BASE_URL?.trim() ? "-DbaseUrl=${params.BASE_URL.trim()} -Durl=${params.BASE_URL.trim()}" : ""
-
-                    def mvnCmd = "mvn clean test " +
-                                 "${suiteArg} " +
-                                 "-Dheadless=${params.HEADLESS} " +
-                                 "${urlArg} " +
-                                 "-Dallure.results.directory=${ALLURE_RESULTS_DIR}"
-
-                    if (isUnix()) {
-                        sh "${mvnCmd}"
+                    def baseUrl = ""
+                    if (params.ENVIRONMENT == 'staging') {
+                        baseUrl = "https://staging.rideze.in" // Replace with your actual staging URL
+                    } else if (params.ENVIRONMENT == 'qa') {
+                        baseUrl = "https://qa.rideze.in"
                     } else {
-                        bat "call ${mvnCmd}"
+                        baseUrl = "http://localhost:3000"
                     }
+
+                    bat """
+                        mvn test \
+                        -DsuiteXmlFile=src/test/resources/${params.SUITE_XML} \
+                        -DbaseUrl=${baseUrl} \
+                        -DthreadCount=${params.THREAD_COUNT} \
+                        -Dheadless=true
+                    """
                 }
             }
         }
@@ -79,35 +74,12 @@ pipeline {
 
     post {
         always {
-            script {
-                if (isUnix()) {
-                    sh '''
-                        if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
-                            mkdir -p target/allure-results
-                            cp -r allure-results/* target/allure-results/
-                        fi
-                        if [ -d "target/allure-results" ]; then
-                            mvn io.qameta.allure:allure-maven:2.12.0:report
-                        fi
-                    '''
-                } else {
-                    bat '''
-                        if exist allure-results (
-                            if not exist target\\allure-results mkdir target\\allure-results
-                            xcopy /E /I /Y allure-results target\\allure-results >nul
-                        )
-                        if exist target\\allure-results (
-                            call mvn io.qameta.allure:allure-maven:2.12.0:report
-                        )
-                    '''
-                }
-            }
-
-            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
-
-            archiveArtifacts artifacts: 'target/site/allure-maven-plugin/**, target/surefire-reports/**, screenshots/**',
-                             allowEmptyArchive: true
+            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+            allure includeProperties: false, jdk: '', results: [[path: 'target/allure-results']]
+        }
+        failure {
+            echo "Build failed for ${env.JOB_NAME} #${env.BUILD_NUMBER} on ${params.ENVIRONMENT}."
+            // Add Slack or Mailer step here once configured
         }
     }
 }
-EOF
